@@ -9,4 +9,25 @@ session cookie), the user is redirected to the Rails app.
 The associated Rails app uses the authlogic gem to encode
 the valid session cookie.
 
+Configuration using Phusion Passenger on OS X Leopard Server
+
+Edit httpd.conf.  Enable Phusion Passenger:
+
+LoadModule passenger_module /Library/Ruby/Gems/1.8/gems/passenger-2.0.6/ext/apache2/mod_passenger.so
+
+Edit sites/0003_....conf file.  Add this to VirtualHost section:
+
+<VirtualHost ...>
+   DocumentRoot "...."
+
+   # url for this Rack application
+   RackBaseURI /static
+   RackEnv production
+
+   # url for the Rails application that handles logins	
+   RailsBaseURI /mgmt
+   RailsEnv production
+   RailsAllowModRewrite off
+</VirtualHost>
+
 Copyright (c) 2008 Peter Zingg, Kentfield School District.
