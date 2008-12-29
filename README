@@ -9,6 +9,11 @@ session cookie), the user is redirected to the Rails app.
 The associated Rails app uses the authlogic gem to encode
 the valid session cookie.
 
+Also includes a Google Analytics middleware that injects our
+GA account id and GA script just before the </body> tag at the
+end of the page.  Based on the Filters::GoogleAnalytics mod_perl
+Apache filter.
+
 Configuration using Phusion Passenger on OS X Leopard Server
 
 Edit httpd.conf.  Enable Phusion Passenger:
