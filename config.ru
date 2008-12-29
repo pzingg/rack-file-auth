@@ -7,5 +7,6 @@ use Rack::CommonLogger
 use Rack::ShowExceptions
 
 # use Rack::Lint
-use CookieAuth, ['kwebauth', 'auth_ksdwebmin'], '/mgmt/xlogin'
+use CookieAuth, :auth_cookies => ['kwebauth', 'auth_ksdwebmin'], 
+    :login_path => '/mgmt/xlogin', :mysql_db => 'ksdwebmin'
 run Rack::Index.new('/Library/WebServer/kentweb/teachers', '/static')

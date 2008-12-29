@@ -1,16 +1,26 @@
 require 'rack/auth/abstract/handler'
 require 'rack/recursive'
+require 'mysql'
 
 class CookieAuth < Rack::Auth::AbstractHandler
-  def initialize(app, auth_cookies=[], login_path=nil)
+  attr_reader :config
+
+  def initialize(app, cfg={})
     @app = app
-    @auth_cookies = auth_cookies
-    @login_path = login_path
+    @config = {
+      :auth_cookies => [],
+      :login_path => nil,
+      :mysql_host => 'localhost',
+      :mysql_user => 'rack',
+      :mysql_password => 'rack',
+      :mysql_db => 'rackauth',
+      :mysql_query => "SELECT login FROM users WHERE remember_token='?'" 
+    }.update(cfg)
   end
 
   def call(env)
     req = Rack::Request.new(env)
-    @auth_cookies.each do |cookie_name|
+    @config[:auth_cookies].each do |cookie_name|
       if req.cookies.key?(cookie_name)
         cookie_value = req.cookies[cookie_name]
         user = valid_user(cookie_name, cookie_value)
@@ -23,8 +33,8 @@ class CookieAuth < Rack::Auth::AbstractHandler
       end
     end
 
-    if @login_path
-      redirect(@login_path, req.url)
+    if @config[:login_path]
+      redirect(@config[:login_path], req.url)
     else
       unauthorized
     end
@@ -50,9 +60,26 @@ class CookieAuth < Rack::Auth::AbstractHandler
   end
   
   def valid_user(cookie_name, cookie_value)
+    # old-style cookie (from perl's Apache::Cookie)
     m = cookie_value.match(/user\:([^:]+)\:/)
-    # TODO: parse the cookie using authlogic?
-    m.nil? ? cookie_name : m[1]
-  end
+    return m[1] if !m.nil?
 
+    # authlogic cookie - do mysql lookup
+    m = cookie_value.match(/^[a-f0-9]+$/)
+    if !m.nil?
+      my = Mysql::new(@config[:mysql_host], 
+      	 @config[:mysql_user], 
+	 @config[:mysql_password],
+	 @config[:mysql_db])
+
+      sql = @config[:mysql_query].gsub(/\?/, cookie_value)
+      res = my.query(sql)
+      res.each do |row|
+        return row[0]
+      end
+    end
+
+    # should return false, but we want to permit user in
+    cookie_name
+  end
 end
