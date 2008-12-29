@@ -1,0 +1,12 @@
+The idea is to provide a Rack application based on Rack::File
+that follows the Apache "Indexes" option to serve up index.html
+files found in a directory.  On top of that there is an
+authorization middleware level that checks for a session cookie
+created by a Ruby on Rails application on the same host.
+If found, the files are served.  If not found (or not a valid
+session cookie), the user is redirected to the Rails app.
+
+The associated Rails app uses the authlogic gem to encode
+the valid session cookie.
+
+Copyright (c) 2008 Peter Zingg, Kentfield School District.
