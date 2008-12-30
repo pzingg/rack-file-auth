@@ -10,15 +10,29 @@ class CookieAuth < Rack::Auth::AbstractHandler
     @config = {
       :auth_cookies => [],
       :login_path => nil,
+      :except => [],
       :mysql_host => 'localhost',
       :mysql_user => 'rack',
       :mysql_password => 'rack',
       :mysql_db => 'rackauth',
       :mysql_query => "SELECT login FROM users WHERE remember_token='?'" 
     }.update(cfg)
+    
+    # Cribbed from Rack::URLMap
+    @exceptions = @config[:except].sort_by { |location| -location.size } 
   end
 
   def call(env)
+    # See if this URI should skip the test
+    # Cribbed from Rack::URLMap
+    path = env['PATH_INFO']
+    @exceptions.each do |location, skip|
+      next unless location == path[0, location.size]
+      next unless path[location.size] == nil || path[location.size] == ?/
+      # Found a match -- just go down the stack
+      return @app.call(env)
+    end
+
     req = Rack::Request.new(env)
     @config[:auth_cookies].each do |cookie_name|
       if req.cookies.key?(cookie_name)
