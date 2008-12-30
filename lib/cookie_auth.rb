@@ -33,6 +33,8 @@ class CookieAuth < Rack::Auth::AbstractHandler
       return @app.call(env)
     end
 
+    # Create a Rack::Request to parse cookies
+    # This will be in env['rack.request'] sometime soon
     req = Rack::Request.new(env)
     @config[:auth_cookies].each do |cookie_name|
       if req.cookies.key?(cookie_name)
