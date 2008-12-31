@@ -11,5 +11,5 @@ use Rack::ShowExceptions
 use GoogleAnalytics, 'UA-1439623-2'
 use CookieAuth, :auth_cookies => ['kwebauth', 'auth_ksdwebmin'], 
     :login_path => '/mgmt/xlogin', :mysql_db => 'ksdwebmin',
-    :except => [ '/outreach' ]
+    :except => [ '/outreach' ], :whitelist => ['10.3.0.0/16', '10.4.0.0/16']
 run Rack::Index.new('/Library/WebServer/kentweb/teachers', '/static')

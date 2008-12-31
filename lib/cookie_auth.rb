@@ -1,6 +1,7 @@
 require 'rack/auth/abstract/handler'
 require 'rack/recursive'
 require 'mysql'
+require 'ipaddr'
 
 class CookieAuth < Rack::Auth::AbstractHandler
   attr_reader :config
@@ -11,6 +12,7 @@ class CookieAuth < Rack::Auth::AbstractHandler
       :auth_cookies => [],
       :login_path => nil,
       :except => [],
+      :whitelist => [],
       :mysql_host => 'localhost',
       :mysql_user => 'rack',
       :mysql_password => 'rack',
@@ -18,20 +20,12 @@ class CookieAuth < Rack::Auth::AbstractHandler
       :mysql_query => "SELECT login FROM users WHERE remember_token='?'" 
     }.update(cfg)
     
-    # Cribbed from Rack::URLMap
+    @subnets = @config[:whitelist].collect { |spec| IPAddr.new(spec) }
     @exceptions = @config[:except].sort_by { |location| -location.size } 
   end
 
   def call(env)
-    # See if this URI should skip the test
-    # Cribbed from Rack::URLMap
-    path = env['PATH_INFO']
-    @exceptions.each do |location, skip|
-      next unless location == path[0, location.size]
-      next unless path[location.size] == nil || path[location.size] == ?/
-      # Found a match -- just go down the stack
-      return @app.call(env)
-    end
+    return @app.call(env) if ip_exempt?(env) || path_exempt?(env)
 
     # Create a Rack::Request to parse cookies
     # This will be in env['rack.request'] sometime soon
@@ -57,7 +51,23 @@ class CookieAuth < Rack::Auth::AbstractHandler
   end
   
   private
+  def ip_exempt?(env)
+    return false unless @subnets.size > 0
+    ip_addr = IPAddr.new(env['REMOTE_ADDR'])
+    return @subnets.any? { |net| net.include?(ip_addr) }
+  end
 
+  def path_exempt?(env)
+    return false unless @exceptions.size > 0
+    
+    # Cribbed from Rack::URLMap
+    path = env['PATH_INFO']
+    return @exceptions.any? do |location|
+      (location == path[0, location.size] &&
+        (path[location.size] == nil || path[location.size] == ?/))
+    end
+  end
+  
   def redirect(loc, original_url)
     body = "Redirecting to #{loc} for authentication for #{original_url}\n"
     loc = loc + "?uri=" + Rack::Utils.escape(original_url)
