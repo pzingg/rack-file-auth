@@ -25,7 +25,7 @@ module Rack
     F = ::File
 
     def _call(env)
-      return forbidden  if env["PATH_INFO"].include? ".."
+      return forbidden if env["PATH_INFO"].match(/(^|\/)\.\.($|\/$)/)
 
       @uri = Utils.unescape(env["PATH_INFO"])
       @path = F.join(@root, @uri)
