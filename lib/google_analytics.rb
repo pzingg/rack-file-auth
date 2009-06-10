@@ -20,7 +20,7 @@ END_SCRIPT
 
   def call(env)
     status, headers, body = @app.call(env)
-    if status == 200 && (headers['Content-Type'] || '').index("text/") == 0 &&
+    if status == 200 && (headers['Content-Type'] || '').index("text/") == 0
       body_s = ''
       if body.is_a?(String)
         body_s = body
